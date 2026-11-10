@@ -3,10 +3,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Linux host CPU, memory, disks, and network metrics.
-  - job_name: 'node-exporter'
+  # Prometheus itself
+   - job_name: prometheus
     static_configs:
-      - targets: ['host-gateway:9100']
+      - targets: ["localhost:9090"]
 
   # Node Applications
   - job_name: 'prestige-hostel-local'
@@ -26,6 +26,15 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: localhost:5700  # Match what the dashboard expects
+
+  - job_name: 'skirill-publication-local'
+    metrics_path: /publication-site/v1/metrics
+    static_configs:
+      - targets: ['host-gateway:3000'] #PM2 instance
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: localhost:3000  # Match what the dashboard expects      
 
 
   

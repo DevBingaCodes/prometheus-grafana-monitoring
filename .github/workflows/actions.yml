@@ -1,0 +1,142 @@
+
+name: Deploy Prometheus and Grafana
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy Monitoring Stack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add VPS to known hosts
+        env:
+          VPS_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload Grafana environment
+        env:
+          VPS_HOST: ${{ secrets.SSH_HOST }}
+          VPS_USER: ${{ secrets.SSH_USER }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          ENV_B64=$(printf '%s' "$GRAFANA_ADMIN_PASSWORD" | base64 -w 0)
+
+          ssh "$VPS_USER@$VPS_HOST" \
+            "mkdir -p /home/binga/app-configs &&
+             printf '%s' '$ENV_B64' | base64 -d > /home/binga/app-configs/Prometheus-Grafana.env &&
+             chmod 600 /home/binga/app-configs/Prometheus-Grafana.env"
+
+      - name: Deploy application and configure Nginx
+        env:
+          VPS_HOST: ${{ secrets.SSH_HOST }}
+          VPS_USER: ${{ secrets.SSH_USER }}
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
+        run: |
+          ssh "$VPS_USER@$VPS_HOST" \
+            "CERTBOT_EMAIL='$CERTBOT_EMAIL' bash -s" <<'REMOTE'
+
+          set -euo pipefail
+
+          APP_DIR="/home/binga/apps/Prometheus-Grafana"
+          ENV_FILE="/home/binga/app-configs/Prometheus-Grafana.env"
+          DOMAIN="grafana.skirill.org"
+          REPO="git@github.com:DevBingaCodes/prometheus-grafana-monitoring.git"
+
+          echo "Installing required packages..."
+
+          sudo apt-get update
+          sudo apt-get install -y git nginx certbot python3-certbot-nginx
+
+          echo "Checking Docker..."
+
+          command -v docker >/dev/null 2>&1 || {
+            echo "Docker is not installed on this VPS."
+            exit 1
+          }
+
+          docker compose version
+
+          echo "Preparing application directory..."
+
+          mkdir -p /home/binga/apps
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone --branch master "$REPO" "$APP_DIR"
+          else
+            cd "$APP_DIR"
+            git pull --ff-only origin master
+          fi
+
+          cd "$APP_DIR"
+
+          test -f "$ENV_FILE" || {
+            echo "Grafana environment file is missing."
+            exit 1
+          }
+
+          echo "Validating Docker Compose configuration..."
+
+          sudo docker compose --env-file "$ENV_FILE" config -q
+
+          echo "Starting monitoring stack..."
+
+          sudo docker compose --env-file "$ENV_FILE" up -d --pull always
+
+          echo "Configuring Nginx..."
+
+          sudo tee /etc/nginx/sites-available/grafana >/dev/null <<'NGINX'
+          server {
+              listen 80;
+              listen [::]:80;
+
+              server_name grafana.skirill.org;
+
+              location / {
+                  proxy_pass http://127.0.0.1:3001;
+                  proxy_http_version 1.1;
+
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+              }
+          }
+          NGINX
+
+          sudo ln -sfn /etc/nginx/sites-available/grafana \
+            /etc/nginx/sites-enabled/grafana
+
+          sudo nginx -t
+          sudo systemctl enable nginx
+          sudo systemctl reload nginx
+
+          echo "Requesting HTTPS certificate..."
+
+          sudo certbot --nginx \
+            -d "$DOMAIN" \
+            --non-interactive \
+            --agree-tos \
+            --redirect \
+            -m "$CERTBOT_EMAIL"
+
+          echo "Checking containers..."
+
+          sudo docker compose ps
+
+          echo "Deployment completed."
+
+          REMOTE
