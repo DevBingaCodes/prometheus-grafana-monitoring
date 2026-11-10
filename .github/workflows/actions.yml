@@ -135,7 +135,7 @@ jobs:
 
           echo "Checking containers..."
 
-          docker compose ps
+          docker compose --env-file "$ENV_FILE" ps
 
           echo "Deployment completed."
 
