@@ -87,11 +87,11 @@ jobs:
 
           echo "Validating Docker Compose configuration..."
 
-          sudo docker compose --env-file "$ENV_FILE" config -q
+          docker compose --env-file "$ENV_FILE" config -q
 
           echo "Starting monitoring stack..."
 
-          sudo docker compose --env-file "$ENV_FILE" up -d --pull always
+          docker compose --env-file "$ENV_FILE" up -d --pull always
 
           echo "Configuring Nginx..."
 
@@ -135,7 +135,7 @@ jobs:
 
           echo "Checking containers..."
 
-          sudo docker compose ps
+          docker compose ps
 
           echo "Deployment completed."
 
