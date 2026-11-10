@@ -30,7 +30,7 @@ jobs:
           VPS_USER: ${{ secrets.SSH_USER }}
           GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
-          ENV_B64=$(printf '%s' "$GRAFANA_ADMIN_PASSWORD" | base64 -w 0)
+          ENV_B64=$(printf 'GF_SECURITY_ADMIN_PASSWORD=%s\n' "$GRAFANA_ADMIN_PASSWORD" | base64 -w 0)
 
           ssh "$VPS_USER@$VPS_HOST" \
             "mkdir -p /home/binga/app-configs &&
