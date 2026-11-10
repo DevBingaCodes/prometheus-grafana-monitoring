@@ -9,28 +9,31 @@ scrape_configs:
       - targets: ["localhost:9090"]
 
   # Node Applications
+  #Prestige Hostel API
    - job_name: 'prestige-hostel-local'
      metrics_path: /prestige-hostel/v1/metrics
      static_configs:
-      - targets: ['host-gateway:5900'] #PM2 instance
+      - targets: ['host.docker.internal:5900'] #PM2 instance
      relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: localhost:5900  # Match what the dashboard expects
   
+  # Murandi API
    - job_name: 'murandi-local'
      metrics_path: /murandi/v1/metrics
      static_configs:
-      - targets: ['host-gateway:5700'] #PM2 instance
+      - targets: ['host.docker.internal:5700'] #PM2 instance
      relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: localhost:5700  # Match what the dashboard expects
 
+  # Skirill Publication API
    - job_name: 'skirill-publication-local'
      metrics_path: /publication-site/v1/metrics
      static_configs:
-      - targets: ['host-gateway:3000'] #PM2 instance
+      - targets: ['host.docker.internal:3000'] #PM2 instance
      relabel_configs:
       - source_labels: [__address__]
         target_label: instance
