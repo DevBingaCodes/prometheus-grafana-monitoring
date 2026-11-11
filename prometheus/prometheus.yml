@@ -62,7 +62,7 @@ scrape_configs:
 
    # Fast Store API
    - job_name: 'fast-store-local'
-     metrics_path: /metrics
+     metrics_path: /api/metrics
      static_configs:
       - targets: ['host.docker.internal:5500'] #PM2 instance
      relabel_configs:
