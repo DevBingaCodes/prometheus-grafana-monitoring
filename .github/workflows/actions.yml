@@ -93,6 +93,8 @@ jobs:
 
           docker compose --env-file "$ENV_FILE" up -d --pull always
 
+          docker compose --env-file /home/binga/app-configs/Prometheus-Grafana.env up -d --force-recreate prometheus
+
           echo "Configuring Nginx..."
 
           sudo tee /etc/nginx/sites-available/grafana >/dev/null <<'NGINX'
