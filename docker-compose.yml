@@ -44,6 +44,35 @@ services:
       - '/:/host:ro,rslave'
     expose:
       - '9100'
+    
+  
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    expose:
+      - "8080"
+
+  
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.5.1
+    container_name: nginx-exporter
+    restart: unless-stopped
+    command:
+      - '--nginx.scrape-uri=http://host.docker.internal:8081/stub_status'
+    extra_hosts:
+      - "host.docker.internal:172.18.0.1"
+    expose:
+      - "9113"
 
 volumes:
   prometheus_data:
