@@ -8,9 +8,21 @@ scrape_configs:
      static_configs:
       - targets: ["localhost:9090"]
   
+  # Node Exporter
    - job_name: linux-vps
      static_configs:
       - targets: ['172.18.0.2:9100']
+  
+  # Docker Monitoring
+    # Docker monitoring
+   - job_name: docker
+     static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Nginx monitoring
+   - job_name: nginx
+     static_configs:
+      - targets: ['nginx-exporter:9113']
 
   # Node Applications
   #Prestige Hostel API
