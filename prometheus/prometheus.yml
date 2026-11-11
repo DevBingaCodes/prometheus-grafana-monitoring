@@ -58,7 +58,17 @@ scrape_configs:
      relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: localhost:3000  # Match what the dashboard expects      
+        replacement: localhost:3000  # Match what the dashboard expects
+
+   # Fast Store API
+   - job_name: 'fast-store-local'
+     metrics_path: /metrics
+     static_configs:
+      - targets: ['host.docker.internal:5500'] #PM2 instance
+     relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: localhost:5500  # Match what the dashboard expects          
 
 
   
