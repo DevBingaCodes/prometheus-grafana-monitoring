@@ -17,7 +17,7 @@ scrape_configs:
     # cAdvisor
    - job_name: cadvisor
      static_configs:
-      - targets: ['cadvisor:8080']
+      - targets: ['172.18.0.6:8080']
 
   # Nginx monitoring
    - job_name: nginx
